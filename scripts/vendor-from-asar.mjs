@@ -13,7 +13,7 @@
  * built-in seat lives inside `@deepseek-ai/dsh-client-ui-model-selection`,
  * which is bundled into `app.asar` and exports no reusable component. To show
  * `Provider/Model` in the trigger we therefore take that plugin's browser half
- * verbatim and change the seven documented spots below.
+ * verbatim and change the six documented spots below.
  *
  * If a future DSH release moves an anchor, this script fails loudly instead of
  * writing a half-patched bundle — re-run it after updating the anchors and the
@@ -42,8 +42,17 @@ function once(text, from, to, label) {
 }
 
 /**
- * The seven edits. Each entry documents what the upstream code did and why this
+ * The six edits. Each entry documents what the upstream code did and why this
  * plugin changes it.
+ *
+ * NOTE: the upstream service list is deliberately left alone. The seat resolves
+ * its per-session catalog through `modelDirectories.directoryFor()`, which reaches
+ * `ctx.remote.session` through the CONSUMING context, so `remote` /
+ * `remote.session` must stay declared here. Trimming the list to the services
+ * this plugin visibly uses (as an earlier revision did) throws
+ * `cannot get property "remote.session" without inject` on the first render after
+ * a real launch; the slot registry then retires the crashing entry and the
+ * built-in seat renders instead — with no error shown anywhere.
  */
 const EDITS = [
   {
@@ -59,15 +68,7 @@ const EDITS = [
     to: `\t\tconst NS = "${PKG.name}";`
   },
   {
-    label: '3. plugin services',
-    why: 'we no longer own the catalog/resolver or the /model command, so only these three services are required.',
-    from: `\t\t/** Required services: the contribution registry, the seat's slot registry, locale, and the service's own faces. */\n` +
-          `\t\tconst inject = [\n\t\t\t"commandUi",\n\t\t\t"locale",\n\t\t\t"sessions",\n\t\t\t"slots",\n\t\t\t"remote",\n\t\t\t"remote.session"\n\t\t];`,
-    to: `\t\t/** Required services: locale, the session registry, and the seat's slot registry. */\n` +
-        `\t\tconst inject = [\n\t\t\t"locale",\n\t\t\t"sessions",\n\t\t\t"slots"\n\t\t];`
-  },
-  {
-    label: '4. do not mount the catalog resolver',
+    label: '3. do not mount the catalog resolver',
     why: 'the built-in plugin owns the shared `modelDirectories` service; a second one would duplicate the catalog and its loader. The godoc above `apply` is rewritten in the same step so the vendored file does not describe a mount it no longer performs.',
     from: `\t\t/**\n` +
           `\t\t* Client plugin body: mount ModelDirectoryResolver, register the \`model\` dictionaries,\n` +
@@ -100,7 +101,7 @@ const EDITS = [
         `\t\t\t*/`
   },
   {
-    label: '5. drop the /model command contribution',
+    label: '4. drop the /model command contribution',
     why: 'the built-in plugin registers the same slash command; a second registration shows it twice in the palette.',
     regex: /\n\t\t\tctx\.inject\(\["commandUi", "modelDirectories"\], \(scope\) => \{[\s\S]*?\n\t\t\t\}\);/,
     to: `\n\t\t\t/*\n` +
@@ -109,7 +110,7 @@ const EDITS = [
         `\t\t\t*/`
   },
   {
-    label: '6. provider-prefixed trigger label',
+    label: '5. provider-prefixed trigger label',
     why: 'THE feature: the trigger renders `currentChoice.model.name`, so prefixing the choice copies makes the composer read "Provider/Model" while the menu (built from the untouched `groups`) keeps plain model names under their provider headings.',
     from: `\t\t\tconst choices = (0, react.useMemo)(() => groups.flatMap((group) => group.models.map((model) => ({\n` +
           `\t\t\t\tgroup,\n` +
@@ -130,7 +131,7 @@ const EDITS = [
         `\t\t\t\tselection: {`
   },
   {
-    label: '7. shadow the built-in seat',
+    label: '6. shadow the built-in seat',
     why: 'single slots render the lowest priority; -1 shadows the built-in registration at 0 (same priority would throw).',
     from: `"conversation.input.model",\n\t\t\t\t\tlocale: NS,`,
     to: `"conversation.input.model",\n` +
@@ -162,6 +163,7 @@ export function verify(text) {
   const checks = [
     [text.includes(`id: "${PKG.name}",`), 'module id'],
     [text.includes(`const NS = "${PKG.name}";`), 'locale namespace'],
+    [text.includes('\t\t\t"remote",\n\t\t\t"remote.session"\n'), 'seat services remote/remote.session kept'],
     [!text.includes('\t\t\tctx.plugin(ModelDirectoryResolver);'), 'resolver not mounted'],
     [!text.includes('mount ModelDirectoryResolver, register'), 'stale plugin godoc rewritten'],
     [!text.includes('"commandUi", "modelDirectories"'), '/model command not registered'],

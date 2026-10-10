@@ -68,17 +68,18 @@ an application restart.
   layer stack; the browser half is discovered through `dsh.client` + `exports["./client"]`.
 - `cordis.patch.yml` inserts one row (`id: model-show`, `name: dsh-model-show`).
 - `lib/client.js` is the built-in `@deepseek-ai/dsh-client-ui-model-selection` browser bundle with
-  seven documented edits (`scripts/vendor-from-asar.mjs`, each marked with an `EDIT:` comment in
+  six documented edits (`scripts/vendor-from-asar.mjs`, each marked with an `EDIT:` comment in
   the generated file). The two that produce the visible change are the provider-prefixed
   `choices[].model.name` and registering the composer seat at `priority: -1`, which shadows the
-  built-in seat because the lowest priority renders.
+  built-in seat because the lowest priority renders. The upstream `inject` list is left untouched
+  (see Limitations — the seat resolves its catalog through the consuming context).
 - The label is prefixed where the trigger reads it (`currentChoice?.model.name`), so the menu's own
   `groups` — and therefore search — stay untouched.
 
 ## Development
 
 ```console
-npm test                 # offline checks: manifest, the seven edits, and the label behaviour
+npm test                 # offline checks: manifest, the six edits, and the label behaviour
 npm run vendor           # re-extract the upstream bundle from the installed app and re-apply the edits
 npm run vendor:check     # exit non-zero when the shipped bundle is not the vendored one
 ```
@@ -100,7 +101,7 @@ against the vendored output, so a CRLF checkout would fail both `npm test` and `
 | `package.json` | Bundle and client manifest (`dsh.bundle.patch`, `dsh.client`) |
 | `cordis.patch.yml` | Inserts the plugin row into the profile layer stack |
 | `lib/index.js` | Node half (empty `apply`, so the row can mount) |
-| `lib/client.js` | Vendored browser bundle with the seven edits |
+| `lib/client.js` | Vendored browser bundle with the six edits |
 | `scripts/vendor-from-asar.mjs` | Vendoring: extract from an installed DSH, apply and verify the edits |
 | `tests/verify-bundle.test.mjs` | Offline verification of the shipped bundle |
 | `icon.svg`, `locale/*.json` | Plugin Manager card metadata |
@@ -115,6 +116,12 @@ against the vendored output, so a CRLF checkout would fail both `npm test` and `
 - The plugin inherits the built-in control wholesale, including its stylesheet and its
   `min(360px, 45cqw)` trigger width; a long `Provider/Model` label is ellipsized rather than
   wrapped.
+- The vendored bundle deliberately keeps the built-in plugin's whole service list (`commandUi`,
+  `locale`, `sessions`, `slots`, `remote`, `remote.session`). The seat resolves its per-session
+  catalog through the *consuming* context, so trimming the list to the services this plugin visibly
+  uses throws `cannot get property "remote.session" without inject` on the first render after a
+  launch; the slot registry then retires the crashing entry and the built-in seat renders instead —
+  with no error shown anywhere. `npm run vendor` and `npm test` guard against that edit returning.
 - No configuration: the format is fixed to `Provider/Model`.
 
 ## License

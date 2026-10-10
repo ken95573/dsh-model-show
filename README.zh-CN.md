@@ -54,14 +54,14 @@
 
 - `lib/index.js` 是插件的宿主半段（空的 `apply`），只为了让 profile 的层能挂上这一行；浏览器半段由 `dsh.client` + `exports["./client"]` 发现。
 - `cordis.patch.yml` 插入一行（`id: model-show`、`name: dsh-model-show`）。
-- `lib/client.js` 是内置 `@deepseek-ai/dsh-client-ui-model-selection` 浏览器 bundle 的 vendored 副本，共 7 处改动（见 `scripts/vendor-from-asar.mjs`，每处都在生成文件里留下 `EDIT:` 注释）。带来可见变化的是两处：`choices[].model.name` 拼上供应商前缀，以及把输入框座位注册到 `priority: -1`——优先级最低者渲染，因此影子覆盖内置座位。
+- `lib/client.js` 是内置 `@deepseek-ai/dsh-client-ui-model-selection` 浏览器 bundle 的 vendored 副本，共 6 处改动（见 `scripts/vendor-from-asar.mjs`，每处都在生成文件里留下 `EDIT:` 注释）。带来可见变化的是两处：`choices[].model.name` 拼上供应商前缀，以及把输入框座位注册到 `priority: -1`——优先级最低者渲染，因此影子覆盖内置座位。
 - 前缀只加在触发器读取的 `currentChoice?.model.name` 上，菜单用的 `groups` 没动，所以搜索行为不变。
 
 ## 开发
 
 ```console
-npm test                 # 离线检查：manifest、7 处改动、标签行为
-npm run vendor           # 从已安装的应用重新提取上游 bundle 并重新打这 7 处改动
+npm test                 # 离线检查：manifest、6 处改动、标签行为
+npm run vendor           # 从已安装的应用重新提取上游 bundle 并重新打这 6 处改动
 npm run vendor:check     # 已发布的 bundle 与重新提取结果不一致时以非零码退出
 ```
 
@@ -70,7 +70,7 @@ npm run vendor:check     # 已发布的 bundle 与重新提取结果不一致时
 `dsh/node_modules/@deepseek-ai/dsh-client-ui-model-selection/lib/client.js`，也可以用
 `--from <client.js>` 指定单个 bundle，或用 `--asar <app.asar>` 指定归档。
 
-上游把锚点改掉时，vendoring 会**直接报错退出**（`anchor not found (<label>) — upstream bundle changed?`），不会默默产出坏包；这时需要对照新 bundle 复核这 7 处改动、更新脚本，再跑 `npm test`。
+上游把锚点改掉时，vendoring 会**直接报错退出**（`anchor not found (<label>) — upstream bundle changed?`），不会默默产出坏包；这时需要对照新 bundle 复核这 6 处改动、更新脚本，再跑 `npm test`。
 
 行尾由 `.gitattributes` 统一为 LF。`lib/client.js` 是按字节与 vendoring 结果比较的，CRLF 检出会让 `npm test` 和 `npm run vendor:check` 双双失败。
 
@@ -79,7 +79,7 @@ npm run vendor:check     # 已发布的 bundle 与重新提取结果不一致时
 | `package.json` | bundle 与客户端 manifest（`dsh.bundle.patch`、`dsh.client`） |
 | `cordis.patch.yml` | 把插件行插入 profile 的层栈 |
 | `lib/index.js` | 宿主半段（空 `apply`，让这一行能挂载） |
-| `lib/client.js` | vendored 的浏览器 bundle（含 7 处改动） |
+| `lib/client.js` | vendored 的浏览器 bundle（含 6 处改动） |
 | `scripts/vendor-from-asar.mjs` | vendoring：从已安装的 DSH 提取、改、校验 |
 | `tests/verify-bundle.test.mjs` | 对已发布 bundle 的离线验证 |
 | `icon.svg`、`locale/*.json` | 插件市场卡片信息 |
@@ -90,6 +90,7 @@ npm run vendor:check     # 已发布的 bundle 与重新提取结果不一致时
   `@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/cordis`、`@deepseek-ai/dsh-client-store`
   （已在 `dsh.client.external` 里声明）。未来某个 DSH 版本若重构内置模型选择器，这个 bundle 可能失效；`engines.dsh`、vendoring 脚本和 `npm test` 是三道保险。
 - 控件整体沿用内置实现，包括它的样式与 `min(360px, 45cqw)` 的触发器宽度；「供应商/模型」过长时会被省略号截断，不会换行或撑破布局。
+- vendored bundle 刻意保留内置插件的完整服务列表（`commandUi`、`locale`、`sessions`、`slots`、`remote`、`remote.session`）。座位是通过**消费方上下文**去解析每个会话的模型目录的，一旦把列表裁成"本插件看得见用到的服务"，启动后第一次渲染就会抛 `cannot get property "remote.session" without inject`，槽位注册表随即把这个条目静默除名、改由内置座位渲染——界面上看不到任何报错。`npm run vendor` 与 `npm test` 都会拦住这处改动再次出现。
 - 没有可配置项：格式固定为「供应商/模型」。
 
 ## 许可

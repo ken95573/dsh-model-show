@@ -17,19 +17,22 @@ license header; this NOTICE and the `LICENSE` file serve that purpose.
 
 ## What was changed
 
-`scripts/vendor-from-asar.mjs` performs the seven edits and documents each one in place with an
+`scripts/vendor-from-asar.mjs` performs the six edits and documents each one in place with an
 `EDIT:` comment inside the generated file:
 
 1. Module-loader id → `dsh-model-show` (must equal this package's name).
 2. Locale namespace → `dsh-model-show` (the built-in plugin already owns `"model"`).
-3. Plugin `inject` → `["locale", "sessions", "slots"]`.
-4. The `ModelDirectoryResolver` mount is removed: the built-in plugin keeps owning the shared
+3. The `ModelDirectoryResolver` mount is removed: the built-in plugin keeps owning the shared
    model catalog and the `modelDirectories` service this plugin consumes.
-5. The `/model` command registration is removed: the built-in plugin already registers it.
-6. `choices[].model.name` becomes `` `${group.name}/${model.name}` `` so the composer trigger
+4. The `/model` command registration is removed: the built-in plugin already registers it.
+5. `choices[].model.name` becomes `` `${group.name}/${model.name}` `` so the composer trigger
    reads `Provider/Model`.
-7. The composer seat is registered with `priority: -1`, which shadows the built-in seat
+6. The composer seat is registered with `priority: -1`, which shadows the built-in seat
    (lowest priority renders, and an equal priority would collide).
+
+The upstream `inject` list is left untouched on purpose: the seat resolves its per-session catalog
+through the consuming context, so `remote` / `remote.session` must stay declared — trimming the list
+makes the first render after a launch throw and the seat is silently retired.
 
 Everything else — the component, its stylesheet, the dictionaries, and the untouched menu
 rendering — is upstream code.

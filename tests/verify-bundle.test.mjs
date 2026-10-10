@@ -2,7 +2,7 @@
  * Offline verification for the shipped browser bundle.
  *
  * These tests never touch a DSH install: they read the committed
- * `lib/client.js`, check that all seven vendoring edits are present, and then
+ * `lib/client.js`, check that all six vendoring edits are present, and then
  * *evaluate the shipped expressions* — the very bytes that run in the browser —
  * to prove the trigger label reads "Provider/Model" while the menu rows keep
  * their plain model names.
@@ -192,10 +192,18 @@ test('host half is a no-op apply', async () => {
 
 /* ------------------------------------------------------------- bundle edits */
 
-test('bundle carries all seven vendoring edits', () => {
+test('bundle carries all six vendoring edits', () => {
   assert.equal(BUNDLE_LINES[0], 'window.__ModuleLoader__.load({');
   assert.equal(line(`id: "${PKG.name}",`).trim(), `id: "${PKG.name}",`);
   assert.equal(line('const NS = ').trim(), `const NS = "${PKG.name}";`);
+  /*
+   * The upstream service list must survive vendoring: the seat's per-session
+   * catalog is resolved through the consuming context (`remote.session`), and a
+   * context that does not declare it throws on the first render after a real
+   * launch — the slot registry silently retires the entry and the built-in seat
+   * renders instead, so the Provider/Model prefix only showed up after a rebuild.
+   */
+  assert.match(BUNDLE, /\t\t\t"remote",\n\t\t\t"remote\.session"\n/);
   assert.doesNotMatch(BUNDLE, /ctx\.plugin\(ModelDirectoryResolver\);/, 'resolver must not be mounted');
   assert.doesNotMatch(BUNDLE, /"commandUi", "modelDirectories"/, '/model command must not be registered');
   assert.match(BUNDLE, /priority: -1,/);
