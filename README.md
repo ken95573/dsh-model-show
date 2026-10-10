@@ -13,6 +13,11 @@ The dropdown menu is untouched: rows stay plain (`Example Chat`) under their pro
 headings, and search keeps matching plain model names. The hover tooltip and ARIA label carry the
 same `Provider/Model` text as the visible trigger.
 
+![Composer trigger reading OpenCode Zen/DeepSeek V4.1 Flash, Default](docs/composer-trigger.png)
+
+A real trigger: provider `OpenCode Zen`, model `DeepSeek V4.1 Flash`; the trailing `Default` is the
+thinking-effort suffix DSH already appends.
+
 ## Requirements
 
 - DSH `>= 0.2.0-rc.1 < 0.3.0-0`, `web` client platform (developed and tested against the Desktop
@@ -105,6 +110,7 @@ against the vendored output, so a CRLF checkout would fail both `npm test` and `
 | `scripts/vendor-from-asar.mjs` | Vendoring: extract from an installed DSH, apply and verify the edits |
 | `tests/verify-bundle.test.mjs` | Offline verification of the shipped bundle |
 | `icon.svg`, `locale/*.json` | Plugin Manager card metadata |
+| `screenshots.json`, `docs/composer-trigger.png` | Storefront screenshot, declared in-repo so the market reads it from here |
 
 ## Limitations
 

@@ -35,6 +35,7 @@
   "files": [
     "lib",
     "locale",
+    "docs",
     "icon.svg",
     "cordis.patch.yml",
     "LICENSE",

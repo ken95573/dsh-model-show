@@ -9,6 +9,10 @@
 
 下拉菜单保持原样：每一行仍是纯模型名（`Example Chat`），归在各自的供应商分组下，搜索也只匹配纯模型名。鼠标悬停提示与 ARIA 标签和可见文字一致，都是「供应商/模型」。
 
+![触发器显示 OpenCode Zen/DeepSeek V4.1 Flash，Default](docs/composer-trigger.png)
+
+真实效果：供应商 `OpenCode Zen`、模型 `DeepSeek V4.1 Flash`，末尾的 `Default` 是 DSH 原本就会带的思考档位后缀。
+
 ## 环境要求
 
 - DSH `>= 0.2.0-rc.1 < 0.3.0-0`，`web` 客户端平台（在桌面端运行时 `0.2.0-rc.2` 上开发与验证）。
@@ -83,6 +87,7 @@ npm run vendor:check     # 已发布的 bundle 与重新提取结果不一致时
 | `scripts/vendor-from-asar.mjs` | vendoring：从已安装的 DSH 提取、改、校验 |
 | `tests/verify-bundle.test.mjs` | 对已发布 bundle 的离线验证 |
 | `icon.svg`、`locale/*.json` | 插件市场卡片信息 |
+| `screenshots.json`、`docs/composer-trigger.png` | 市场详情页截图，声明在仓库里由市场直接读取 |
 
 ## 已知限制
 

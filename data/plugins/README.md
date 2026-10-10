@@ -30,6 +30,11 @@ there are generated from those files and must not be edited by hand.
   A description containing `": "` must be quoted; keep the claim accurate — it
   is checked against the code.
 - One pull request adds at most three entries. This one adds one.
+- Screenshots are **not** an entry field. They are declared in this repository, in
+  `screenshots.json` next to `package.json` (1-8 paths relative to that file), and the
+  storefront picks them up from there — so screenshots can be changed later without another
+  pull request. The upstream `data/screenshots.json` is a deprecated fallback: do not add keys
+  to it.
 
 ## Pull request
 
