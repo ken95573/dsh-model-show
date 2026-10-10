@@ -68,9 +68,31 @@ const EDITS = [
   },
   {
     label: '4. do not mount the catalog resolver',
-    why: 'the built-in plugin owns the shared `modelDirectories` service; a second one would duplicate the catalog and its loader.',
-    from: `\t\t\tconst t = ctx.locale.bind(NS);\n\t\t\tctx.plugin(ModelDirectoryResolver);`,
-    to: `\t\t\tconst t = ctx.locale.bind(NS);\n` +
+    why: 'the built-in plugin owns the shared `modelDirectories` service; a second one would duplicate the catalog and its loader. The godoc above `apply` is rewritten in the same step so the vendored file does not describe a mount it no longer performs.',
+    from: `\t\t/**\n` +
+          `\t\t* Client plugin body: mount ModelDirectoryResolver, register the \`model\` dictionaries,\n` +
+          `\t\t* then register the /model popup contribution and the composer model seat\n` +
+          `\t\t* over the service.\n` +
+          `\t\t* @param ctx - client root context.\n` +
+          `\t\t*/\n` +
+          `\t\tfunction apply(ctx) {\n` +
+          `\t\t\tctx.effect(() => ctx.locale.register(NS, {\n` +
+          `\t\t\t\tzh,\n` +
+          `\t\t\t\ten\n` +
+          `\t\t\t}), "ui-model-selection: dictionaries");\n` +
+          `\t\t\tconst t = ctx.locale.bind(NS);\n` +
+          `\t\t\tctx.plugin(ModelDirectoryResolver);`,
+    to: `\t\t/**\n` +
+        `\t\t* Client plugin body: register the \`model\` dictionaries, then register the\n` +
+        `\t\t* composer model seat over the shared \`modelDirectories\` service.\n` +
+        `\t\t* @param ctx - client root context.\n` +
+        `\t\t*/\n` +
+        `\t\tfunction apply(ctx) {\n` +
+        `\t\t\tctx.effect(() => ctx.locale.register(NS, {\n` +
+        `\t\t\t\tzh,\n` +
+        `\t\t\t\ten\n` +
+        `\t\t\t}), "ui-model-selection: dictionaries");\n` +
+        `\t\t\tconst t = ctx.locale.bind(NS);\n` +
         `\t\t\t/*\n` +
         `\t\t\t* EDIT: upstream mounts ModelDirectoryResolver here, which owns the shared\n` +
         `\t\t\t* model catalog and the \`modelDirectories\` service. The built-in plugin keeps\n` +
@@ -141,6 +163,7 @@ export function verify(text) {
     [text.includes(`id: "${PKG.name}",`), 'module id'],
     [text.includes(`const NS = "${PKG.name}";`), 'locale namespace'],
     [!text.includes('\t\t\tctx.plugin(ModelDirectoryResolver);'), 'resolver not mounted'],
+    [!text.includes('mount ModelDirectoryResolver, register'), 'stale plugin godoc rewritten'],
     [!text.includes('"commandUi", "modelDirectories"'), '/model command not registered'],
     [text.includes('name: `${group.name}/${model.name}`'), 'provider-prefixed label'],
     [text.includes('priority: -1,'), 'seat priority'],
