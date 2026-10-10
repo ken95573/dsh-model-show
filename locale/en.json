@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Provider/Model label",
+    "description": "The composer model selector reads \"Provider/Model\", so a selected model names its provider."
+  }
+}
