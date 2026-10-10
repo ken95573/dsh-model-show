@@ -72,6 +72,8 @@ npm run vendor:check     # 已发布的 bundle 与重新提取结果不一致时
 
 上游把锚点改掉时，vendoring 会**直接报错退出**（`anchor not found (<label>) — upstream bundle changed?`），不会默默产出坏包；这时需要对照新 bundle 复核这 7 处改动、更新脚本，再跑 `npm test`。
 
+行尾由 `.gitattributes` 统一为 LF。`lib/client.js` 是按字节与 vendoring 结果比较的，CRLF 检出会让 `npm test` 和 `npm run vendor:check` 双双失败。
+
 | 路径 | 作用 |
 |---|---|
 | `package.json` | bundle 与客户端 manifest（`dsh.bundle.patch`、`dsh.client`） |

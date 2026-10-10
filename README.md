@@ -92,6 +92,9 @@ If upstream moves an anchor, vendoring fails loudly (`anchor not found (<label>)
 bundle changed?`) instead of shipping a broken bundle; review the edits against the new bundle and
 update the script, then re-run `npm test`.
 
+Line endings are normalised to LF by `.gitattributes`. `lib/client.js` is compared byte for byte
+against the vendored output, so a CRLF checkout would fail both `npm test` and `npm run vendor:check`.
+
 | Path | Purpose |
 |---|---|
 | `package.json` | Bundle and client manifest (`dsh.bundle.patch`, `dsh.client`) |
