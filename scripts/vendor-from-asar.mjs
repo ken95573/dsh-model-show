@@ -156,35 +156,82 @@ export function verify(text) {
 
 /* ----------------------------------------------------------- input sources */
 
-/** Read one entry out of an asar archive without external dependencies. */
+/**
+ * Read one entry out of an asar archive without external dependencies.
+ *
+ * An asar archive is two nested pickles followed by the concatenated entries:
+ *
+ *   [0 .. 8)              pickle header: uint32 payloadSize (= 4), uint32 headerSize
+ *   [8 .. 8+headerSize)   the header pickle: uint32 jsonLen, then the UTF-8 JSON tree
+ *   [8+headerSize ..)     entry contents; `node.offset` is relative to that point
+ *
+ * Reading `jsonLen` from the header pickle's offset 0 instead of offset 4 is an
+ * off-by-four that makes every real archive look like it has a corrupt header.
+ */
 export function readAsarEntry(archive, entryPath) {
   const fd = fs.openSync(archive, 'r');
   try {
-    const head = Buffer.alloc(8);
-    fs.readSync(fd, head, 0, 8, 0);
-    const size = head.readUInt32LE(4);
-    const buf = Buffer.alloc(size);
-    fs.readSync(fd, buf, 0, size, 8);
-    const dataStart = 8 + size;
-    const jsonLen = buf.readUInt32LE(0);
-    let json;
-    try {
-      json = JSON.parse(buf.subarray(4, 4 + jsonLen).toString('utf8'));
-    } catch {
-      throw new Error(`${archive}: unreadable asar header`);
+    const sizeHead = Buffer.alloc(8);
+    if (fs.readSync(fd, sizeHead, 0, 8, 0) !== 8) {
+      throw new Error(`${archive}: not an asar archive (shorter than 8 bytes)`);
     }
+    const headerSize = sizeHead.readUInt32LE(4);
+    const dataStart = 8 + headerSize;
+    if (headerSize < 8 || headerSize > 64 * 1024 * 1024) {
+      throw new Error(`${archive}: not an asar archive (implausible header size ${headerSize})`);
+    }
+    const head = Buffer.alloc(headerSize);
+    if (fs.readSync(fd, head, 0, headerSize, 8) !== headerSize) {
+      throw new Error(`${archive}: truncated asar header (expected ${headerSize} bytes)`);
+    }
+    const json = parseAsarHeader(archive, head, headerSize);
     let node = json;
     for (const part of entryPath.split('/')) {
       node = node?.files?.[part];
       if (node === undefined) throw new Error(`${archive}: no entry ${entryPath}`);
     }
     if (typeof node.offset !== 'string') throw new Error(`${archive}: ${entryPath} is a directory`);
-    const out = Buffer.alloc(node.size);
-    fs.readSync(fd, out, 0, node.size, dataStart + parseInt(node.offset, 10));
+    const size = toInt(node.size);
+    const at = toInt(node.offset);
+    if (size === undefined || at === undefined || at < 0) {
+      throw new Error(`${archive}: ${entryPath} has an invalid size/offset`);
+    }
+    const out = Buffer.alloc(size);
+    if (fs.readSync(fd, out, 0, size, dataStart + at) !== size) {
+      throw new Error(`${archive}: truncated entry ${entryPath}`);
+    }
     return out.toString('utf8');
   } finally {
     fs.closeSync(fd);
   }
+}
+
+/** `node.size` is a number and `node.offset` a decimal string; accept either. */
+function toInt(value) {
+  const n = typeof value === 'number' ? value : Number.parseInt(value, 10);
+  return Number.isSafeInteger(n) ? n : undefined;
+}
+
+/**
+ * Decode the JSON tree out of the header pickle. A pickled string is
+ * `[uint32 length][bytes]`, so inside the header pickle the length sits at
+ * offset 4 and the JSON at offset 8. A bare `[length][bytes]` header is also
+ * tolerated; the first candidate yielding a tree with `files` wins.
+ */
+function parseAsarHeader(archive, head, headerSize) {
+  const tried = [];
+  for (const start of [8, 4]) {
+    const length = head.readUInt32LE(start - 4);
+    tried.push(`offset ${start} needs ${length}`);
+    if (length < 2 || start + length > headerSize) continue;
+    try {
+      const json = JSON.parse(head.subarray(start, start + length).toString('utf8'));
+      if (json !== null && typeof json === 'object' && json.files !== undefined) return json;
+    } catch {
+      /* not this layout — try the next one */
+    }
+  }
+  throw new Error(`${archive}: unreadable asar header (headerSize=${headerSize}; ${tried.join('; ')})`);
 }
 
 /** Best-effort localisation of the shipping app.asar. */
@@ -231,7 +278,7 @@ function main(argv) {
   }
 
   const patched = patch(source);
-  console.log(`upstream : ${origin} (${source.length} bytes)`);
+  console.log(`upstream : ${origin} (${Buffer.byteLength(source)} bytes)`);
   console.log(`edits    : ${EDITS.length}`);
   console.log(`output   : lib/client.js (${Buffer.byteLength(patched)} bytes)`);
 

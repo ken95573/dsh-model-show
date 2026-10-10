@@ -1,0 +1,9 @@
+# Normalise every text file to LF in the repository *and* in every checkout.
+#
+# This repo has no binaries, so a blanket rule is safe. It matters because:
+#   * `lib/client.js` is a vendored bundle compared byte-for-byte against the
+#     freshly vendored output (`npm run vendor:check`), and the offline suite
+#     asserts on literal source text such as `window.__ModuleLoader__.load({`;
+#   * a Windows checkout with the common `core.autocrlf=true` would otherwise
+#     rewrite all 1255 line endings and fail both of those guards.
+* text=auto eol=lf

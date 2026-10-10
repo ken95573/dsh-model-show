@@ -9,11 +9,11 @@
   "author": "ken95573",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ken95573/dsh-model-show2.git"
+    "url": "git+https://github.com/ken95573/dsh-model-show.git"
   },
-  "homepage": "https://github.com/ken95573/dsh-model-show2#readme",
+  "homepage": "https://github.com/ken95573/dsh-model-show#readme",
   "bugs": {
-    "url": "https://github.com/ken95573/dsh-model-show2/issues"
+    "url": "https://github.com/ken95573/dsh-model-show/issues"
   },
   "keywords": [
     "deepseek",
