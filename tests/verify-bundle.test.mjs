@@ -93,7 +93,7 @@ function triggerLabelOf({ current, status, retainedEffort, groups }) {
 }
 
 /** The shipped dictionary keys this test relies on, stubbed with the real zh strings. */
-const t = (key) => ({ 'trigger.loading': '加载中', 'trigger.fallback': '选择模型', 'effort.providerDefault': '默认' })[key] ?? key;
+const t = (key) => ({ 'trigger.loading': '正在加载模型…', 'trigger.fallback': '请选择模型', 'effort.providerDefault': '默认' })[key] ?? key;
 
 /* ------------------------------------------------------------------- fixtures */
 
@@ -260,12 +260,14 @@ test('trigger uses each provider display name', () => {
   );
 });
 
-test('loading / empty / unknown-selection fallbacks are unchanged', () => {
+test('loading / empty / unknown-selection fallbacks follow upstream 0.2.1', () => {
   assert.equal(
     triggerLabelOf({ current: null, status: 'loading', retainedEffort: undefined, groups: [] }),
-    '加载中'
+    '正在加载模型…'
   );
-  assert.equal(triggerLabelOf({ current: null, status: 'ready', retainedEffort: undefined, groups: GROUPS }), '选择模型');
+  assert.equal(triggerLabelOf({ current: null, status: 'ready', retainedEffort: undefined, groups: GROUPS }), '请选择模型');
+  // Upstream 0.2.1 dropped the `state.current` raw fallback: an unknown selection
+  // now shows the generic `trigger.fallback` text instead of `provider/model`.
   assert.equal(
     triggerLabelOf({
       current: { provider: 'ghost', model: 'x' },
@@ -273,7 +275,7 @@ test('loading / empty / unknown-selection fallbacks are unchanged', () => {
       retainedEffort: undefined,
       groups: GROUPS
     }),
-    'ghost/x'
+    '请选择模型'
   );
 });
 

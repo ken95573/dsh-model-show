@@ -20,8 +20,8 @@ thinking-effort suffix DSH already appends.
 
 ## Requirements
 
-- DSH `>= 0.2.0-rc.1 < 0.3.0-0`, `web` client platform (developed and tested against the Desktop
-  runtime `0.2.0-rc.2`).
+- DSH `>= 0.2.0-rc.1 < 0.3.0-0` or `>= 0.2.1-rc.1 < 0.4.0-0`, `web` client platform (developed
+  against the Desktop runtime `0.2.0-rc.2`, re-vendored and tested against `0.2.1-rc.2`).
 - The built-in model selection plugin (`@deepseek-ai/dsh-client-ui-model-selection`) must stay
   enabled. This plugin reuses its `modelDirectories` service and only shadows the composer seat.
 - Provider names are whatever your own model configuration declares (`displayName` of each

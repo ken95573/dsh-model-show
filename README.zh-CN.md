@@ -15,7 +15,7 @@
 
 ## 环境要求
 
-- DSH `>= 0.2.0-rc.1 < 0.3.0-0`，`web` 客户端平台（在桌面端运行时 `0.2.0-rc.2` 上开发与验证）。
+- DSH `>= 0.2.0-rc.1 < 0.3.0-0` 或 `>= 0.2.1-rc.1 < 0.4.0-0`，`web` 客户端平台（在桌面端运行时 `0.2.0-rc.2` 上开发，`0.2.1-rc.2` 上重新 vendor 并验证）。
 - 内置的模型选择插件（`@deepseek-ai/dsh-client-ui-model-selection`）需要保持启用：本插件复用它提供的 `modelDirectories` 服务，只接管输入框那个座位。
 - 供应商名字取自你自己模型配置里的 `displayName`（例如 `Example Provider`、`Example Vendor`）。
 

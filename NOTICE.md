@@ -7,7 +7,8 @@ built-in plugin `@deepseek-ai/dsh-client-ui-model-selection`
 (`dsh/node_modules/@deepseek-ai/dsh-client-ui-model-selection/lib/client.js` inside the
 installed application's `resources/app.asar`).
 
-- Upstream package: `@deepseek-ai/dsh-client-ui-model-selection` 0.2.0-rc.2
+- Upstream package: `@deepseek-ai/dsh-client-ui-model-selection` (vendored from the
+  `0.2.0-rc.2` and later the `0.2.1-rc.2` desktop builds)
 - Upstream license: MIT (Copyright (c) DeepSeek)
 - This package: MIT (see `LICENSE`)
 
