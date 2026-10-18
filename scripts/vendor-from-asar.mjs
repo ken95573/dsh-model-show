@@ -13,7 +13,7 @@
  * built-in seat lives inside `@deepseek-ai/dsh-client-ui-model-selection`,
  * which is bundled into `app.asar` and exports no reusable component. To show
  * `Provider/Model` in the trigger we therefore take that plugin's browser half
- * verbatim and change the six documented spots below.
+ * verbatim and change the seven documented spots below.
  *
  * If a future DSH release moves an anchor, this script fails loudly instead of
  * writing a half-patched bundle — re-run it after updating the anchors and the
@@ -42,7 +42,7 @@ function once(text, from, to, label) {
 }
 
 /**
- * The six edits. Each entry documents what the upstream code did and why this
+ * The seven edits. Each entry documents what the upstream code did and why this
  * plugin changes it.
  *
  * NOTE: the upstream service list is deliberately left alone. The seat resolves
@@ -139,6 +139,71 @@ const EDITS = [
         `\t\t\t\t\t* priority renders, and an equal priority would collide. */\n` +
         `\t\t\t\t\tpriority: -1,\n` +
         `\t\t\t\t\tlocale: NS,`
+  },
+  {
+    label: '7. do not re-declare the child label slot',
+    why: 'DSH 0.2.1 makes the built-in seat declare the `conversation.input.model.label` child slot. A slot may only be declared once, so repeating that declaration throws `slot "conversation.input.model.label" is already declared (by an entry in "conversation.input.model")` and the whole registration is refused — the plugin then does nothing, silently. The child slot stays declared by the built-in entry and the component keeps rendering it through `renderSlot(..., { fallback: model.name })`.',
+    from: `\n\t\t\t\t\tchildren: { "conversation.input.model.label": {\n` +
+          `\t\t\t\t\t\tkind: "single",\n` +
+          `\t\t\t\t\t\tscope: "session",\n` +
+          `\t\t\t\t\t\tinline: true\n` +
+          `\t\t\t\t\t} },`,
+    to: ''
+  },
+  {
+    label: '8. tolerate a missing renderSlot face',
+    why: 'DSH 0.2.1 hands `renderSlot` to a component only when its entry declares `children` (renderer: `if (entry.children !== void 0) kit["renderSlot"] = boundRenderSlot(...)`), and a child slot may only be declared once — so a shadow entry cannot declare `conversation.input.model.label` (the built-in seat already does) and therefore receives no `renderSlot` face at all. Calling it blindly throws `renderSlot is not a function` on the first render and the entry is retired. The fallback handed in by edit 10 renders the built-in decorator itself, so the menu keeps its badge instead of dropping to a plain name.',
+    from: `\t\t\t\tchildren: renderSlot("conversation.input.model.label", {\n` +
+          `\t\t\t\t\tprovider,\n` +
+          `\t\t\t\t\tmodel,\n` +
+          `\t\t\t\t\tplacement,\n` +
+          `\t\t\t\t\tselected\n` +
+          `\t\t\t\t}, { fallback: model.name })`,
+    to: `\t\t\t\tchildren: typeof renderSlot === "function" ? renderSlot("conversation.input.model.label", {\n` +
+        `\t\t\t\t\tprovider,\n` +
+        `\t\t\t\t\tmodel,\n` +
+        `\t\t\t\t\tplacement,\n` +
+        `\t\t\t\t\tselected\n` +
+        `\t\t\t\t}, { fallback: model.name }) : typeof renderLabel === "function" ? renderLabel(provider, model) : model.name`
+  },
+  {
+    label: '9. render the entry that decorates this child slot',
+    why: 'The `conversation.input.model.label` child slot belongs to the built-in seat: its registrations (the built-in model-label plugin) stay alive even though our shadow entry wins the seat election. The registry exposes them through `entriesOfSlot`, and each entry carries its own component and locale namespace, so replaying them here reproduces the built-in decoration exactly — including whatever badge the current release ships — instead of hard-coding a marker that would rot on the next update.',
+    from: `\t\t\tconst t = ctx.locale.bind(NS);\n`,
+    to: `\t\t\tconst t = ctx.locale.bind(NS);\n` +
+        `\t\t\t/* EDIT: the seat cannot declare the built-in child slot, so the renderer hands it no\n` +
+        `\t\t\t* renderSlot face; replay the slot's own entries instead (see edit 8). */\n` +
+        `\t\t\tconst renderLabel = (provider, model) => {\n` +
+        `\t\t\t\ttry {\n` +
+        `\t\t\t\t\tconst registry = ctx.slots;\n` +
+        `\t\t\t\t\tconst list = typeof registry.entriesOfSlot === "function" ? registry.entriesOfSlot("conversation.input.model.label") : typeof registry.entries === "function" ? registry.entries("conversation.input.model.label") : [];\n` +
+        `\t\t\t\t\tfor (const entry of list !== null && list !== void 0 ? list : []) {\n` +
+        `\t\t\t\t\t\tconst component = entry === null || entry === void 0 ? void 0 : entry.component;\n` +
+        `\t\t\t\t\t\tif (typeof component !== "function") continue;\n` +
+        `\t\t\t\t\t\tconst namespace = entry.locale !== void 0 ? entry.locale : entry.options === null || entry.options === void 0 ? void 0 : entry.options.locale;\n` +
+        `\t\t\t\t\t\tconst translate = typeof namespace === "string" ? ctx.locale.bind(namespace) : (key) => key;\n` +
+        `\t\t\t\t\t\tconst rendered = component({\n` +
+        `\t\t\t\t\t\t\tprovider,\n` +
+        `\t\t\t\t\t\t\tmodel,\n` +
+        `\t\t\t\t\t\t\tt: translate\n` +
+        `\t\t\t\t\t\t});\n` +
+        `\t\t\t\t\t\tif (rendered !== void 0 && rendered !== null) return rendered;\n` +
+        `\t\t\t\t\t}\n` +
+        `\t\t\t\t} catch (error) {}\n` +
+        `\t\t\t\treturn model.name;\n` +
+        `\t\t\t};\n`
+  },
+  {
+    label: '10. hand renderLabel to the seat component',
+    why: 'Slot props reach a component through its registration `inject` result; without this the component never sees the fallback built in edit 9.',
+    from: `\t\t\t\t\t\treturn {\n\t\t\t\t\t\t\tavailable,\n\t\t\t\t\t\t\tdirectory: directory.store,`,
+    to: `\t\t\t\t\t\treturn {\n\t\t\t\t\t\t\tavailable,\n\t\t\t\t\t\t\trenderLabel,\n\t\t\t\t\t\t\tdirectory: directory.store,`
+  },
+  {
+    label: '11. accept the renderLabel prop',
+    why: 'The seat component destructures its props; without the extra key `renderLabel` would be an undeclared identifier inside the render expression added by edit 8.',
+    from: `\t\tfunction ModelSelect({ locked, available, directory, load, select, t, renderSlot }) {`,
+    to: `\t\tfunction ModelSelect({ locked, available, directory, load, select, t, renderSlot, renderLabel }) {`
   }
 ];
 
@@ -169,6 +234,13 @@ export function verify(text) {
     [!text.includes('"commandUi", "modelDirectories"'), '/model command not registered'],
     [text.includes('name: `${group.name}/${model.name}`'), 'provider-prefixed label'],
     [text.includes('priority: -1,'), 'seat priority'],
+    [text.includes('typeof renderSlot === "function"'), 'renderSlot face is optional'],
+    [text.includes('typeof renderLabel === "function"'), 'label fallback stays optional'],
+    [text.includes('const renderLabel = (provider, model)'), 'built-in label entries replayed'],
+    [text.includes('renderLabel,\n\t\t\t\t\t\t\tdirectory: directory.store,'), 'renderLabel reaches the component'],
+    [text.includes('t, renderSlot, renderLabel }'), 'component accepts renderLabel'],
+    [!text.includes('children: { "conversation.input.model.label"'), 'child label slot not re-declared'],
+    [text.includes('renderSlot("conversation.input.model.label"'), 'child label slot still rendered'],
     [text.includes('currentChoice?.model.name'), 'trigger still reads currentChoice.model.name'],
     [text.includes('require("@deepseek-ai/dsh-client-ui-primitives")'), 'primitives require kept'],
     [text.includes('require("@deepseek-ai/cordis")'), 'cordis require kept'],

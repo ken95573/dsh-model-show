@@ -2,7 +2,7 @@
  * Offline verification for the shipped browser bundle.
  *
  * These tests never touch a DSH install: they read the committed
- * `lib/client.js`, check that all six vendoring edits are present, and then
+ * `lib/client.js`, check that all eleven vendoring edits are present, and then
  * *evaluate the shipped expressions* — the very bytes that run in the browser —
  * to prove the trigger label reads "Provider/Model" while the menu rows keep
  * their plain model names.
@@ -168,10 +168,18 @@ test('plugin manager metadata is complete', () => {
 test('client declaration matches the vendored bundle', () => {
   assert.equal(PKG.dsh.client.immediately, true);
   assert.equal(PKG.dsh.client.platform, 'web');
-  assert.ok(
-    PKG.dsh.client.inject.includes('@deepseek-ai/dsh-client-ui-model-selection'),
-    'the built-in plugin provides the modelDirectories service this plugin consumes'
-  );
+  // The vendored bundle declares the cordis services `commandUi`, `remote` and
+  // `remote.session`, so the client-side inject chain has to load the modules
+  // that provide them: dropping either one lets the plugin apply before those
+  // services exist, and the failed entry is retired silently at boot.
+  for (const spec of [
+    '@deepseek-ai/dsh-api-session-controller',
+    '@deepseek-ai/dsh-client-locale',
+    '@deepseek-ai/dsh-client-ui-commands',
+    '@deepseek-ai/dsh-api-remotes'
+  ]) {
+    assert.ok(PKG.dsh.client.inject.includes(spec), `inject loads ${spec}`);
+  }
   for (const spec of ['@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-store']) {
     assert.ok(PKG.dsh.client.external.includes(spec), `external declares ${spec}`);
   }
@@ -192,7 +200,7 @@ test('host half is a no-op apply', async () => {
 
 /* ------------------------------------------------------------- bundle edits */
 
-test('bundle carries all six vendoring edits', () => {
+test('bundle carries all eleven vendoring edits', () => {
   assert.equal(BUNDLE_LINES[0], 'window.__ModuleLoader__.load({');
   assert.equal(line(`id: "${PKG.name}",`).trim(), `id: "${PKG.name}",`);
   assert.equal(line('const NS = ').trim(), `const NS = "${PKG.name}";`);
@@ -207,6 +215,30 @@ test('bundle carries all six vendoring edits', () => {
   assert.doesNotMatch(BUNDLE, /ctx\.plugin\(ModelDirectoryResolver\);/, 'resolver must not be mounted');
   assert.doesNotMatch(BUNDLE, /"commandUi", "modelDirectories"/, '/model command must not be registered');
   assert.match(BUNDLE, /priority: -1,/);
+  /*
+   * DSH 0.2.1 declares `conversation.input.model.label` from the built-in seat.
+   * A slot may only be declared once, so repeating it throws
+   * `slot ... is already declared` and the registration is refused — the plugin
+   * then does nothing at all, with no error surfaced anywhere.
+   */
+  assert.doesNotMatch(BUNDLE, /children: \{ "conversation\.input\.model\.label"/, 'child slot must not be re-declared');
+  /*
+   * Because the child slot is declared by the built-in entry, the renderer hands
+   * this entry no `renderSlot` face at all (`if (entry.children !== void 0)`), so
+   * calling it blindly throws `renderSlot is not a function` on the first render.
+   * The shipped bytes must guard the call and fall back to the plain model name.
+   */
+  assert.match(BUNDLE, /typeof renderSlot === "function"/, 'renderSlot face is optional');
+  /*
+   * With no `renderSlot` face the row label would drop the built-in decoration
+   * (`DeepSeek-V4.1-Flash` + its release badge). The shipped bytes therefore
+   * replay the child slot's own registrations through `entriesOfSlot`, so the
+   * badge tracks whatever the running release ships instead of a hard-coded mark.
+   */
+  assert.match(BUNDLE, /typeof renderLabel === "function"/, 'label replay stays optional');
+  assert.match(BUNDLE, /const renderLabel = \(provider, model\)/, 'built-in label entries are replayed');
+  assert.match(BUNDLE, /entriesOfSlot\("conversation\.input\.model\.label"\)/, 'replay reads the child slot');
+  assert.match(BUNDLE, /renderSlot\("conversation\.input\.model\.label"/, 'child slot is still rendered');
   assert.match(BUNDLE, /name: `\$\{group\.name\}\/\$\{model\.name\}`/);
   assert.equal(line('const modelLabel = ').includes('currentChoice?.model.name'), true);
 });

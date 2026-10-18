@@ -1,6 +1,6 @@
 {
   "name": "dsh-model-show",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Composer model selector shows Provider/Model — 对话框模型选择器显示「供应商/模型」",
   "type": "module",
   "main": "lib/index.js",
@@ -58,7 +58,8 @@
       "inject": [
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-model-selection"
+        "@deepseek-ai/dsh-client-ui-commands",
+        "@deepseek-ai/dsh-api-remotes"
       ],
       "external": [
         "@deepseek-ai/dsh-client-ui-primitives",
