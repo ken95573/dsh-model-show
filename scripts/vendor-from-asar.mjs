@@ -126,7 +126,8 @@ const EDITS = [
         `\t\t\t\t*/\n` +
         `\t\t\t\tmodel: {\n` +
         `\t\t\t\t\t...model,\n` +
-        `\t\t\t\t\tname: \`\${group.name}/\${model.name}\`\n` +
+        `\t\t\t\t\tname: \`\${group.name}/\${model.name}\`,\n` +
+        `\t\t\t\t\toriginalName: model.name\n` +
         `\t\t\t\t},\n` +
         `\t\t\t\tselection: {`
   },
@@ -174,6 +175,14 @@ const EDITS = [
         `\t\t\t/* EDIT: the seat cannot declare the built-in child slot, so the renderer hands it no\n` +
         `\t\t\t* renderSlot face; replay the slot's own entries instead (see edit 8). */\n` +
         `\t\t\tconst renderLabel = (provider, model) => {\n` +
+        `\t\t\t\t/* EDIT: the trigger's choice copies carry the "Provider/" prefix in name, but the\n` +
+        `\t\t\t\t* built-in decorator matches the model name literally — replay it with the catalog\n` +
+        `\t\t\t\t* name and put the prefix back in front, so the badge survives both placements. */\n` +
+        `\t\t\t\tconst plain = typeof model.originalName === "string" ? {\n` +
+        `\t\t\t\t\t...model,\n` +
+        `\t\t\t\t\tname: model.originalName\n` +
+        `\t\t\t\t} : model;\n` +
+        `\t\t\t\tconst prefix = typeof model.originalName === "string" ? model.name.slice(0, model.name.length - model.originalName.length) : "";\n` +
         `\t\t\t\ttry {\n` +
         `\t\t\t\t\tconst registry = ctx.slots;\n` +
         `\t\t\t\t\tconst list = typeof registry.entriesOfSlot === "function" ? registry.entriesOfSlot("conversation.input.model.label") : typeof registry.entries === "function" ? registry.entries("conversation.input.model.label") : [];\n` +
@@ -184,10 +193,12 @@ const EDITS = [
         `\t\t\t\t\t\tconst translate = typeof namespace === "string" ? ctx.locale.bind(namespace) : (key) => key;\n` +
         `\t\t\t\t\t\tconst rendered = component({\n` +
         `\t\t\t\t\t\t\tprovider,\n` +
-        `\t\t\t\t\t\t\tmodel,\n` +
+        `\t\t\t\t\t\t\tmodel: plain,\n` +
         `\t\t\t\t\t\t\tt: translate\n` +
         `\t\t\t\t\t\t});\n` +
-        `\t\t\t\t\t\tif (rendered !== void 0 && rendered !== null) return rendered;\n` +
+        `\t\t\t\t\t\tif (rendered !== void 0 && rendered !== null) return prefix === "" ? rendered : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, {\n` +
+        `\t\t\t\t\t\t\tchildren: [prefix, rendered]\n` +
+        `\t\t\t\t\t\t});\n` +
         `\t\t\t\t\t}\n` +
         `\t\t\t\t} catch (error) {}\n` +
         `\t\t\t\treturn model.name;\n` +
@@ -239,6 +250,8 @@ export function verify(text) {
     [text.includes('const renderLabel = (provider, model)'), 'built-in label entries replayed'],
     [text.includes('renderLabel,\n\t\t\t\t\t\t\tdirectory: directory.store,'), 'renderLabel reaches the component'],
     [text.includes('t, renderSlot, renderLabel }'), 'component accepts renderLabel'],
+    [text.includes('originalName: model.name'), 'catalog name kept beside the prefix'],
+    [text.includes('typeof model.originalName === "string"'), 'replay matches the catalog name'],
     [!text.includes('children: { "conversation.input.model.label"'), 'child label slot not re-declared'],
     [text.includes('renderSlot("conversation.input.model.label"'), 'child label slot still rendered'],
     [text.includes('currentChoice?.model.name'), 'trigger still reads currentChoice.model.name'],

@@ -238,6 +238,15 @@ test('bundle carries all eleven vendoring edits', () => {
   assert.match(BUNDLE, /typeof renderLabel === "function"/, 'label replay stays optional');
   assert.match(BUNDLE, /const renderLabel = \(provider, model\)/, 'built-in label entries are replayed');
   assert.match(BUNDLE, /entriesOfSlot\("conversation\.input\.model\.label"\)/, 'replay reads the child slot');
+  /*
+   * The trigger's choice copy renames the model to "Provider/Model", but the
+   * built-in decorator matches the catalog name literally (`model.name !==
+   * "DeepSeek-V4.1-Flash"` returns the untouched name). Without the kept
+   * `originalName` the trigger would show the prefix but lose the badge that the
+   * menu rows keep.
+   */
+  assert.match(BUNDLE, /originalName: model\.name/, 'catalog name kept beside the prefix');
+  assert.match(BUNDLE, /typeof model\.originalName === "string"/, 'replay matches the catalog name');
   assert.match(BUNDLE, /renderSlot\("conversation\.input\.model\.label"/, 'child slot is still rendered');
   assert.match(BUNDLE, /name: `\$\{group\.name\}\/\$\{model\.name\}`/);
   assert.equal(line('const modelLabel = ').includes('currentChoice?.model.name'), true);
