@@ -168,8 +168,8 @@ const EDITS = [
         `\t\t\t\t}, { fallback: model.name }) : typeof renderLabel === "function" ? renderLabel(provider, model) : model.name`
   },
   {
-    label: '9. render the entry that decorates this child slot',
-    why: 'The `conversation.input.model.label` child slot belongs to the built-in seat: its registrations (the built-in model-label plugin) stay alive even though our shadow entry wins the seat election. The registry exposes them through `entriesOfSlot`, and each entry carries its own component and locale namespace, so replaying them here reproduces the built-in decoration exactly — including whatever badge the current release ships — instead of hard-coding a marker that would rot on the next update.',
+    label: '9. render only the built-in decorator of this child slot',
+    why: 'The `conversation.input.model.label` child slot belongs to the built-in seat: its registrations stay alive even though our shadow entry wins the seat election. Replaying them reproduces the built-in badge instead of hard-coding a marker. ONLY the built-in decorator may be replayed: third-party plugins register their own decorators into this same child slot (at their own priority, below the built-in one), and those are React hook components — invoking one as a plain function inside this component would run its hooks in OUR hook slots and corrupt the whole composer render (frozen model menu, no error surfaced). The namespace prefix `deepseek-model-label` identifies DSH\'s own decorator, and `createElement` keeps even that one behind a real component boundary.',
     from: `\t\t\tconst t = ctx.locale.bind(NS);\n`,
     to: `\t\t\tconst t = ctx.locale.bind(NS);\n` +
         `\t\t\t/* EDIT: the seat cannot declare the built-in child slot, so the renderer hands it no\n` +
@@ -190,11 +190,12 @@ const EDITS = [
         `\t\t\t\t\t\tconst component = entry === null || entry === void 0 ? void 0 : entry.component;\n` +
         `\t\t\t\t\t\tif (typeof component !== "function") continue;\n` +
         `\t\t\t\t\t\tconst namespace = entry.locale !== void 0 ? entry.locale : entry.options === null || entry.options === void 0 ? void 0 : entry.options.locale;\n` +
-        `\t\t\t\t\t\tconst translate = typeof namespace === "string" ? ctx.locale.bind(namespace) : (key) => key;\n` +
-        `\t\t\t\t\t\tconst rendered = component({\n` +
+        `\t\t\t\t\t\t/* EDIT: skip every third-party decorator — only DSH\'s own label plugin renders here. */\n` +
+        `\t\t\t\t\t\tif (typeof namespace !== "string" || namespace.indexOf("deepseek-model-label") !== 0) continue;\n` +
+        `\t\t\t\t\t\tconst rendered = (0, react_jsx_runtime.jsx)(component, {\n` +
         `\t\t\t\t\t\t\tprovider,\n` +
         `\t\t\t\t\t\t\tmodel: plain,\n` +
-        `\t\t\t\t\t\t\tt: translate\n` +
+        `\t\t\t\t\t\t\tt: ctx.locale.bind(namespace)\n` +
         `\t\t\t\t\t\t});\n` +
         `\t\t\t\t\t\tif (rendered !== void 0 && rendered !== null) return prefix === "" ? rendered : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, {\n` +
         `\t\t\t\t\t\t\tchildren: [prefix, rendered]\n` +
@@ -252,6 +253,8 @@ export function verify(text) {
     [text.includes('t, renderSlot, renderLabel }'), 'component accepts renderLabel'],
     [text.includes('originalName: model.name'), 'catalog name kept beside the prefix'],
     [text.includes('typeof model.originalName === "string"'), 'replay matches the catalog name'],
+    [text.includes('namespace.indexOf("deepseek-model-label") !== 0'), 'third-party decorators skipped'],
+    [text.includes('(0, react_jsx_runtime.jsx)(component,'), 'decorator rendered as a component'],
     [!text.includes('children: { "conversation.input.model.label"'), 'child label slot not re-declared'],
     [text.includes('renderSlot("conversation.input.model.label"'), 'child label slot still rendered'],
     [text.includes('currentChoice?.model.name'), 'trigger still reads currentChoice.model.name'],

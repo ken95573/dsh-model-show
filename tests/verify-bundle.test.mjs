@@ -247,6 +247,18 @@ test('bundle carries all eleven vendoring edits', () => {
    */
   assert.match(BUNDLE, /originalName: model\.name/, 'catalog name kept beside the prefix');
   assert.match(BUNDLE, /typeof model\.originalName === "string"/, 'replay matches the catalog name');
+  /*
+   * Third-party plugins register their own decorators into this child slot at
+   * their own priority (below the built-in one). Those are hook components:
+   * calling one as a plain function would run its hooks in
+   * this component's slots and corrupt the composer render (the model menu stops
+   * opening and nothing is logged). Only DSH's own decorator — namespace prefix
+   * `deepseek-model-label` — may be replayed, and it must go through
+   * `createElement` so it keeps a real component boundary.
+   */
+  assert.match(BUNDLE, /namespace\.indexOf\("deepseek-model-label"\) !== 0/, 'third-party decorators are skipped');
+  assert.match(BUNDLE, /\(0, react_jsx_runtime\.jsx\)\(component,/, 'decorator rendered as a component');
+  assert.doesNotMatch(BUNDLE, /const rendered = component\(\{/, 'decorator must not be invoked as a plain function');
   assert.match(BUNDLE, /renderSlot\("conversation\.input\.model\.label"/, 'child slot is still rendered');
   assert.match(BUNDLE, /name: `\$\{group\.name\}\/\$\{model\.name\}`/);
   assert.equal(line('const modelLabel = ').includes('currentChoice?.model.name'), true);
