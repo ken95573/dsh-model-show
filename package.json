@@ -1,6 +1,6 @@
 {
   "name": "dsh-model-show",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Composer model selector shows Provider/Model — 对话框模型选择器显示「供应商/模型」",
   "type": "module",
   "main": "lib/index.js",
@@ -35,7 +35,7 @@
   "files": [
     "lib",
     "locale",
-    "docs",
+    "docs/composer-trigger.png",
     "icon.svg",
     "cordis.patch.yml",
     "LICENSE",
