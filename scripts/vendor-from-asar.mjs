@@ -168,41 +168,88 @@ const EDITS = [
         `\t\t\t\t}, { fallback: model.name }) : typeof renderLabel === "function" ? renderLabel(provider, model) : model.name`
   },
   {
-    label: '9. render only the built-in decorator of this child slot',
-    why: 'The `conversation.input.model.label` child slot belongs to the built-in seat: its registrations stay alive even though our shadow entry wins the seat election. Replaying them reproduces the built-in badge instead of hard-coding a marker. ONLY the built-in decorator may be replayed: third-party plugins register their own decorators into this same child slot (at their own priority, below the built-in one), and those are React hook components — invoking one as a plain function inside this component would run its hooks in OUR hook slots and corrupt the whole composer render (frozen model menu, no error surfaced). The namespace prefix `deepseek-model-label` identifies DSH\'s own decorator, and `createElement` keeps even that one behind a real component boundary.',
+    label: '9. compose the child slot instead of replaying one entry',
+    why: 'The `conversation.input.model.label` child slot belongs to the built-in seat and is registered `kind: single`, so the platform mounts exactly one of its entries and a second registration only wins by priority. Because our shadow entry wins the seat but cannot declare `children`, the renderer hands it no `renderSlot` face (see edit 8), so this plugin has to compose that slot itself. Composition is shape-agnostic: it never looks at who a registration belongs to beyond one stable marker. Every entry is mounted as a real component through `createElement` (a hook component keeps its own hook slots), inside its own bounded inline box (a self-contained pill with background, max-width or a larger font cannot blow up the trigger), and behind an error boundary (a render-phase throw in a third-party component blanks that box only, never the composer - an inline function call did exactly that). The label body is the DSH label decorator, recognised by the `deepseek-model-label` locale prefix, so the release badge keeps following the running build; the platform winner (lowest priority) is the body when that decorator is absent, and every other registration renders as an additive extra beside it.',
     from: `\t\t\tconst t = ctx.locale.bind(NS);\n`,
     to: `\t\t\tconst t = ctx.locale.bind(NS);\n` +
         `\t\t\t/* EDIT: the seat cannot declare the built-in child slot, so the renderer hands it no\n` +
-        `\t\t\t* renderSlot face; replay the slot's own entries instead (see edit 8). */\n` +
+        `\t\t\t* renderSlot face; compose that slot here (see edit 8). Shape-agnostic: every entry is\n` +
+        `\t\t\t* mounted as a real component (createElement, so a hook component keeps its own hook\n` +
+        `\t\t\t* slots), inside a bounded inline box, behind an error boundary — a render-phase throw\n` +
+        `\t\t\t* in someone else's component blanks that box only, never the composer. */\n` +
+        `\t\t\tconst LabelBoundary = class extends react.Component {\n` +
+        `\t\t\t\tconstructor(props) {\n` +
+        `\t\t\t\t\tsuper(props);\n` +
+        `\t\t\t\t\tthis.state = { failed: false };\n` +
+        `\t\t\t\t}\n` +
+        `\t\t\t\tstatic getDerivedStateFromError() {\n` +
+        `\t\t\t\t\treturn { failed: true };\n` +
+        `\t\t\t\t}\n` +
+        `\t\t\t\trender() {\n` +
+        `\t\t\t\t\treturn this.state.failed ? null : this.props.children;\n` +
+        `\t\t\t\t}\n` +
+        `\t\t\t};\n` +
+        `\t\t\tconst labelRow = { display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0, maxWidth: "100%", overflow: "hidden" };\n` +
+        `\t\t\tconst labelBox = { display: "inline-flex", alignItems: "center", minWidth: 0, maxWidth: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" };\n` +
         `\t\t\tconst renderLabel = (provider, model) => {\n` +
         `\t\t\t\t/* EDIT: the trigger's choice copies carry the "Provider/" prefix in name, but the\n` +
-        `\t\t\t\t* built-in decorator matches the model name literally — replay it with the catalog\n` +
-        `\t\t\t\t* name and put the prefix back in front, so the badge survives both placements. */\n` +
+        `\t\t\t\t* decorators match the model name literally — hand them the catalog name and put the\n` +
+        `\t\t\t\t* prefix back in front, so it shows once and the badge survives both placements. */\n` +
         `\t\t\t\tconst plain = typeof model.originalName === "string" ? {\n` +
         `\t\t\t\t\t...model,\n` +
         `\t\t\t\t\tname: model.originalName\n` +
         `\t\t\t\t} : model;\n` +
         `\t\t\t\tconst prefix = typeof model.originalName === "string" ? model.name.slice(0, model.name.length - model.originalName.length) : "";\n` +
+        `\t\t\t\tlet found = [];\n` +
         `\t\t\t\ttry {\n` +
         `\t\t\t\t\tconst registry = ctx.slots;\n` +
-        `\t\t\t\t\tconst list = typeof registry.entriesOfSlot === "function" ? registry.entriesOfSlot("conversation.input.model.label") : typeof registry.entries === "function" ? registry.entries("conversation.input.model.label") : [];\n` +
-        `\t\t\t\t\tfor (const entry of list !== null && list !== void 0 ? list : []) {\n` +
-        `\t\t\t\t\t\tconst component = entry === null || entry === void 0 ? void 0 : entry.component;\n` +
-        `\t\t\t\t\t\tif (typeof component !== "function") continue;\n` +
-        `\t\t\t\t\t\tconst namespace = entry.locale !== void 0 ? entry.locale : entry.options === null || entry.options === void 0 ? void 0 : entry.options.locale;\n` +
-        `\t\t\t\t\t\t/* EDIT: skip every third-party decorator — only DSH\'s own label plugin renders here. */\n` +
-        `\t\t\t\t\t\tif (typeof namespace !== "string" || namespace.indexOf("deepseek-model-label") !== 0) continue;\n` +
-        `\t\t\t\t\t\tconst rendered = (0, react_jsx_runtime.jsx)(component, {\n` +
-        `\t\t\t\t\t\t\tprovider,\n` +
-        `\t\t\t\t\t\t\tmodel: plain,\n` +
-        `\t\t\t\t\t\t\tt: ctx.locale.bind(namespace)\n` +
-        `\t\t\t\t\t\t});\n` +
-        `\t\t\t\t\t\tif (rendered !== void 0 && rendered !== null) return prefix === "" ? rendered : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, {\n` +
-        `\t\t\t\t\t\t\tchildren: [prefix, rendered]\n` +
-        `\t\t\t\t\t\t});\n` +
-        `\t\t\t\t\t}\n` +
-        `\t\t\t\t} catch (error) {}\n` +
-        `\t\t\t\treturn model.name;\n` +
+        `\t\t\t\t\tfound = typeof registry.entriesOfSlot === "function" ? registry.entriesOfSlot("conversation.input.model.label") : typeof registry.entries === "function" ? registry.entries("conversation.input.model.label") : [];\n` +
+        `\t\t\t\t} catch (error) {\n` +
+        `\t\t\t\t\tfound = [];\n` +
+        `\t\t\t\t}\n` +
+        `\t\t\t\tconst list = (found !== null && found !== void 0 ? found : []).filter((entry) => typeof (entry === null || entry === void 0 ? void 0 : entry.component) === "function");\n` +
+        `\t\t\t\tconst namespaceOf = (entry) => entry.locale !== void 0 ? entry.locale : entry.options === null || entry.options === void 0 ? void 0 : entry.options.locale;\n` +
+        `\t\t\t\tconst priorityOf = (entry) => entry.priority !== void 0 ? entry.priority : entry.options !== null && entry.options !== void 0 && entry.options.priority !== void 0 ? entry.options.priority : 0;\n` +
+        `\t\t\t\tconst kitFor = (entry) => {\n` +
+        `\t\t\t\t\tconst kit = {\n` +
+        `\t\t\t\t\t\tprovider,\n` +
+        `\t\t\t\t\t\tmodel: plain\n` +
+        `\t\t\t\t\t};\n` +
+        `\t\t\t\t\tconst namespace = namespaceOf(entry);\n` +
+        `\t\t\t\t\tif (typeof namespace === "string") kit.t = ctx.locale.bind(namespace);\n` +
+        `\t\t\t\t\treturn kit;\n` +
+        `\t\t\t\t};\n` +
+        `\t\t\t\tconst isOwn = (entry) => {\n` +
+        `\t\t\t\t\tconst namespace = namespaceOf(entry);\n` +
+        `\t\t\t\t\treturn typeof namespace === "string" && namespace.indexOf("deepseek-model-label") === 0;\n` +
+        `\t\t\t\t};\n` +
+        `\t\t\t\tconst won = list.find(isOwn);\n` +
+        `\t\t\t\tconst primary = won !== void 0 ? won : list.slice().sort((a, b) => priorityOf(a) - priorityOf(b))[0];\n` +
+        `\t\t\t\tconst extras = list.filter((entry) => entry !== primary);\n` +
+        `\t\t\t\tconst children = [];\n` +
+        `\t\t\t\tif (prefix !== "") children.push((0, react_jsx_runtime.jsx)("span", {\n` +
+        `\t\t\t\t\tstyle: labelBox,\n` +
+        `\t\t\t\t\tchildren: prefix\n` +
+        `\t\t\t\t}, "prefix"));\n` +
+        `\t\t\t\tchildren.push((0, react_jsx_runtime.jsx)("span", {\n` +
+        `\t\t\t\t\tstyle: labelBox,\n` +
+        `\t\t\t\t\tchildren: primary === void 0 ? model.name : (0, react_jsx_runtime.jsx)(LabelBoundary, {\n` +
+        `\t\t\t\t\t\tchildren: (0, react_jsx_runtime.jsx)(primary.component, kitFor(primary))\n` +
+        `\t\t\t\t\t})\n` +
+        `\t\t\t\t}, "body"));\n` +
+        `\t\t\t\textras.forEach((entry, index) => {\n` +
+        `\t\t\t\t\tchildren.push((0, react_jsx_runtime.jsx)("span", {\n` +
+        `\t\t\t\t\t\tstyle: labelBox,\n` +
+        `\t\t\t\t\t\tchildren: (0, react_jsx_runtime.jsx)(LabelBoundary, {\n` +
+        `\t\t\t\t\t\t\tchildren: (0, react_jsx_runtime.jsx)(entry.component, kitFor(entry))\n` +
+        `\t\t\t\t\t\t})\n` +
+        `\t\t\t\t\t}, "extra-" + index));\n` +
+        `\t\t\t\t});\n` +
+        `\t\t\t\treturn (0, react_jsx_runtime.jsx)("span", {\n` +
+        `\t\t\t\t\tclassName: "dsh-model-show-label",\n` +
+        `\t\t\t\t\tstyle: labelRow,\n` +
+        `\t\t\t\t\tchildren\n` +
+        `\t\t\t\t});\n` +
         `\t\t\t};\n`
   },
   {
@@ -248,13 +295,16 @@ export function verify(text) {
     [text.includes('priority: -1,'), 'seat priority'],
     [text.includes('typeof renderSlot === "function"'), 'renderSlot face is optional'],
     [text.includes('typeof renderLabel === "function"'), 'label fallback stays optional'],
-    [text.includes('const renderLabel = (provider, model)'), 'built-in label entries replayed'],
+    [text.includes('const renderLabel = (provider, model)'), 'child label slot composed'],
     [text.includes('renderLabel,\n\t\t\t\t\t\t\tdirectory: directory.store,'), 'renderLabel reaches the component'],
     [text.includes('t, renderSlot, renderLabel }'), 'component accepts renderLabel'],
     [text.includes('originalName: model.name'), 'catalog name kept beside the prefix'],
     [text.includes('typeof model.originalName === "string"'), 'replay matches the catalog name'],
-    [text.includes('namespace.indexOf("deepseek-model-label") !== 0'), 'third-party decorators skipped'],
-    [text.includes('(0, react_jsx_runtime.jsx)(component,'), 'decorator rendered as a component'],
+    [text.includes('const LabelBoundary = class extends react.Component'), 'third-party render is bounded'],
+    [text.includes('static getDerivedStateFromError()'), 'render-phase throw cannot escape'],
+    [text.includes('(0, react_jsx_runtime.jsx)(primary.component, kitFor(primary))'), 'label body mounted as a component'],
+    [text.includes('const extras = list.filter((entry) => entry !== primary)'), 'other decorators appended beside it'],
+    [text.includes('namespace.indexOf("deepseek-model-label") === 0'), 'own decorator identified by namespace'],
     [!text.includes('children: { "conversation.input.model.label"'), 'child label slot not re-declared'],
     [text.includes('renderSlot("conversation.input.model.label"'), 'child label slot still rendered'],
     [text.includes('currentChoice?.model.name'), 'trigger still reads currentChoice.model.name'],

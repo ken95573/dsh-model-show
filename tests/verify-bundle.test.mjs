@@ -232,12 +232,12 @@ test('bundle carries all eleven vendoring edits', () => {
   /*
    * With no `renderSlot` face the row label would drop the built-in decoration
    * (`DeepSeek-V4.1-Flash` + its release badge). The shipped bytes therefore
-   * replay the child slot's own registrations through `entriesOfSlot`, so the
-   * badge tracks whatever the running release ships instead of a hard-coded mark.
+   * compose the child slot themselves, so the badge tracks whatever the running
+   * release ships instead of a hard-coded mark.
    */
-  assert.match(BUNDLE, /typeof renderLabel === "function"/, 'label replay stays optional');
-  assert.match(BUNDLE, /const renderLabel = \(provider, model\)/, 'built-in label entries are replayed');
-  assert.match(BUNDLE, /entriesOfSlot\("conversation\.input\.model\.label"\)/, 'replay reads the child slot');
+  assert.match(BUNDLE, /typeof renderLabel === "function"/, 'label composition stays optional');
+  assert.match(BUNDLE, /const renderLabel = \(provider, model\)/, 'child label slot is composed');
+  assert.match(BUNDLE, /entriesOfSlot\("conversation\.input\.model\.label"\)/, 'composition reads the child slot');
   /*
    * The trigger's choice copy renames the model to "Provider/Model", but the
    * built-in decorator matches the catalog name literally (`model.name !==
@@ -246,19 +246,22 @@ test('bundle carries all eleven vendoring edits', () => {
    * menu rows keep.
    */
   assert.match(BUNDLE, /originalName: model\.name/, 'catalog name kept beside the prefix');
-  assert.match(BUNDLE, /typeof model\.originalName === "string"/, 'replay matches the catalog name');
+  assert.match(BUNDLE, /typeof model\.originalName === "string"/, 'composition matches the catalog name');
   /*
-   * Third-party plugins register their own decorators into this child slot at
-   * their own priority (below the built-in one). Those are hook components:
-   * calling one as a plain function would run its hooks in
-   * this component's slots and corrupt the composer render (the model menu stops
-   * opening and nothing is logged). Only DSH's own decorator — namespace prefix
-   * `deepseek-model-label` — may be replayed, and it must go through
-   * `createElement` so it keeps a real component boundary.
+   * Other plugins register their own decorators into this child slot at their own
+   * priority. Those are hook components, so they must be MOUNTED (`createElement`,
+   * real component boundary) and never invoked as plain functions — an inline
+   * call ran their hooks in this component's slots and corrupted the composer.
+   * Every mounted entry also sits behind an error boundary, so a render-phase
+   * throw blanks only that box, and non-DSH registrations are appended beside the
+   * label body instead of being dropped.
    */
-  assert.match(BUNDLE, /namespace\.indexOf\("deepseek-model-label"\) !== 0/, 'third-party decorators are skipped');
-  assert.match(BUNDLE, /\(0, react_jsx_runtime\.jsx\)\(component,/, 'decorator rendered as a component');
-  assert.doesNotMatch(BUNDLE, /const rendered = component\(\{/, 'decorator must not be invoked as a plain function');
+  assert.match(BUNDLE, /const LabelBoundary = class extends react\.Component/, 'third-party render is bounded');
+  assert.match(BUNDLE, /static getDerivedStateFromError\(\)/, 'render-phase throw cannot escape');
+  assert.match(BUNDLE, /\(0, react_jsx_runtime\.jsx\)\(primary\.component, kitFor\(primary\)\)/, 'label body mounted as a component');
+  assert.match(BUNDLE, /const extras = list\.filter\(\(entry\) => entry !== primary\)/, 'other decorators appended beside it');
+  assert.match(BUNDLE, /namespace\.indexOf\("deepseek-model-label"\) === 0/, 'own decorator identified by namespace');
+  assert.doesNotMatch(BUNDLE, /const rendered = component\(\{/, 'no decorator may be invoked as a plain function');
   assert.match(BUNDLE, /renderSlot\("conversation\.input\.model\.label"/, 'child slot is still rendered');
   assert.match(BUNDLE, /name: `\$\{group\.name\}\/\$\{model\.name\}`/);
   assert.equal(line('const modelLabel = ').includes('currentChoice?.model.name'), true);
