@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+  <strong>English</strong> | <a href="https://github.com/ken95573/dsh-model-show/blob/main/README.zh-CN.md">简体中文</a>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-model-show"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-model-show?style=flat-square&color=4b6fff"></a>
   <a href="https://www.npmjs.com/package/dsh-model-show"><img alt="npm downloads" src="https://img.shields.io/npm/dm/dsh-model-show?style=flat-square&color=eab308"></a>
   <a href="https://github.com/ken95573/dsh-model-show/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ken95573/dsh-model-show?style=flat-square&color=6c5ce7"></a>
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/dsh-model-show?style=flat-square"></a>
+  <a href="https://github.com/ken95573/dsh-model-show/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/npm/l/dsh-model-show?style=flat-square"></a>
 </p>
 
 # dsh-model-show
@@ -57,7 +57,7 @@ thinking-effort suffix DSH already appends.*
 
 From GitHub or a local directory, replace the package name with `github:<user>/dsh-model-show` or
 `"C:\path\to\dsh-model-show"`. **Update** with an explicit version
-(`add dsh-model-show@1.0.4` — the registry `latest` can lag behind rc builds); **remove** with
+(`add dsh-model-show@1.0.5` — the registry `latest` can lag behind rc builds); **remove** with
 `plugin --profile desktop remove dsh-model-show`.
 
 **Let the agent do it** — `plugin_manager`, `action: install_bundle`, `target` = package directory.
@@ -161,4 +161,4 @@ are both accepted). If upstream moves an anchor it fails loudly instead of emitt
 ## License
 
 MIT. `lib/client.js` derives from `@deepseek-ai/dsh-client-ui-model-selection` (MIT, Copyright (c)
-DeepSeek); see [NOTICE.md](NOTICE.md).
+DeepSeek); see [NOTICE.md](https://github.com/ken95573/dsh-model-show/blob/main/NOTICE.md).

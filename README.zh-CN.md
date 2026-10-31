@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> | <strong>简体中文</strong>
+  <a href="https://github.com/ken95573/dsh-model-show/blob/main/README.md">English</a> | <strong>简体中文</strong>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/dsh-model-show"><img alt="npm 版本" src="https://img.shields.io/npm/v/dsh-model-show?style=flat-square&color=4b6fff"></a>
   <a href="https://www.npmjs.com/package/dsh-model-show"><img alt="npm 下载量" src="https://img.shields.io/npm/dm/dsh-model-show?style=flat-square&color=eab308"></a>
   <a href="https://github.com/ken95573/dsh-model-show/stargazers"><img alt="GitHub 星标" src="https://img.shields.io/github/stars/ken95573/dsh-model-show?style=flat-square&color=6c5ce7"></a>
-  <a href="LICENSE"><img alt="许可" src="https://img.shields.io/npm/l/dsh-model-show?style=flat-square"></a>
+  <a href="https://github.com/ken95573/dsh-model-show/blob/main/LICENSE"><img alt="许可" src="https://img.shields.io/npm/l/dsh-model-show?style=flat-square"></a>
 </p>
 
 # dsh-model-show
@@ -46,7 +46,7 @@ DSH Web 的对话框模型选择器显示为 **供应商/模型**，而不是一
 "%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add dsh-model-show
 ```
 
-从 GitHub 或本地目录安装，把包名换成 `github:<用户名>/dsh-model-show` 或 `"C:\path\to\dsh-model-show"`。**更新**请写显式版本（`add dsh-model-show@1.0.4`，仓库的 `latest` 可能落后于 rc 版本）；**卸载**用 `plugin --profile desktop remove dsh-model-show`。
+从 GitHub 或本地目录安装，把包名换成 `github:<用户名>/dsh-model-show` 或 `"C:\path\to\dsh-model-show"`。**更新**请写显式版本（`add dsh-model-show@1.0.5`，仓库的 `latest` 可能落后于 rc 版本）；**卸载**用 `plugin --profile desktop remove dsh-model-show`。
 
 **让 agent 装** — `plugin_manager`，`action: install_bundle`，`target` 传包目录。
 
@@ -118,4 +118,4 @@ npm run vendor:check  # 已发布的 bundle 与重新提取结果不一致时以
 
 ## 许可
 
-MIT。`lib/client.js` 派生自 `@deepseek-ai/dsh-client-ui-model-selection`（MIT，Copyright (c) DeepSeek），详见 [NOTICE.md](NOTICE.md)。
+MIT。`lib/client.js` 派生自 `@deepseek-ai/dsh-client-ui-model-selection`（MIT，Copyright (c) DeepSeek），详见 [NOTICE.md](https://github.com/ken95573/dsh-model-show/blob/main/NOTICE.md)。
