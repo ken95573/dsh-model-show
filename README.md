@@ -1,136 +1,164 @@
+<p align="center">
+  <img src="docs/composer-trigger.png" alt="Composer trigger reading OpenCode Zen/DeepSeek V4.1 Flash · Default" width="360">
+</p>
+
+<p align="center">
+  <strong>English</strong> | <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/dsh-model-show"><img alt="npm version" src="https://img.shields.io/npm/v/dsh-model-show?style=flat-square&color=4b6fff"></a>
+  <a href="https://www.npmjs.com/package/dsh-model-show"><img alt="npm downloads" src="https://img.shields.io/npm/dm/dsh-model-show?style=flat-square&color=eab308"></a>
+  <a href="https://github.com/ken95573/dsh-model-show/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ken95573/dsh-model-show?style=flat-square&color=6c5ce7"></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/dsh-model-show?style=flat-square"></a>
+</p>
+
 # dsh-model-show
 
-A [DSH](https://github.com/deepseek-ai) client plugin for the Web UI: the composer's model
-selector shows **Provider/Model** instead of a bare model name, so a selected model always names
-the provider it comes from.
+The composer's model selector in DSH Web shows **Provider/Model** instead of a bare model name, so
+the picked model always names the provider it came from — and nothing else about the selector
+changes.
 
 | | Composer trigger |
 |---|---|
 | Before | `Example Chat · High` |
-| After  | `Example Provider/Example Chat · High` |
+| After | `Example Provider/Example Chat · High` |
 
-The dropdown menu is untouched: rows stay plain (`Example Chat`) under their provider
-headings, and search keeps matching plain model names. The hover tooltip and ARIA label carry the
-same `Provider/Model` text as the visible trigger.
+*Above: provider `OpenCode Zen`, model `DeepSeek V4.1 Flash`; the trailing `Default` is the
+thinking-effort suffix DSH already appends.*
 
-![Composer trigger reading OpenCode Zen/DeepSeek V4.1 Flash, Default](docs/composer-trigger.png)
-
-A real trigger: provider `OpenCode Zen`, model `DeepSeek V4.1 Flash`; the trailing `Default` is the
-thinking-effort suffix DSH already appends.
+- **Only the trigger text changes.** The provider prefix comes from your own model configuration
+  (`displayName`) — no hard-coded vendor list.
+- **Dropdown and search stay native.** Rows remain plain model names under their provider headings;
+  typing a provider name still matches nothing.
+- **The built-in release badge survives** (`DeepSeek-V4.1-Flash` → `1017`) and keeps following
+  whatever the running DSH build ships.
+- **Other plugins decorating the same label are rendered too**, each in its own bounded box behind
+  an error boundary (v1.0.4).
+- **No settings, no network, no telemetry.** It reads the catalog DSH already has.
 
 ## Requirements
 
-- DSH `>= 0.2.0-rc.1 < 0.3.0-0` or `>= 0.2.1-rc.1 < 0.4.0-0`, `web` client platform (developed
-  against the Desktop runtime `0.2.0-rc.2`, re-vendored and tested against `0.2.1-rc.2`).
+- DSH `>= 0.2.1-rc.2 < 0.2.2`, `web` client platform.
 - The built-in model selection plugin (`@deepseek-ai/dsh-client-ui-model-selection`) must stay
-  enabled. This plugin reuses its `modelDirectories` service and only shadows the composer seat.
-- Provider names are whatever your own model configuration declares (`displayName` of each
-  provider row), e.g. `Example Provider`, `Example Vendor`.
+  enabled — this plugin reuses its `modelDirectories` service and only shadows the composer seat.
+  The built-in label plugin (`…deepseek-model-label-1017`) must stay enabled too; it draws the badge.
+- Provider names are whatever your configuration declares (`displayName`), e.g. `Example Provider`.
 
 ## Install
 
-### Plugin market
+**Plugin market** — search the npm package name `dsh-model-show`, install, enable.
 
-Open the plugin market in the target DSH app, search for the package name `dsh-model-show`,
-install it, then enable it.
-
-### Desktop CLI
-
-The Desktop app ships its own CLI (the reserved `desktop` profile is managed only by it):
+**Desktop CLI** (the reserved `desktop` profile is managed only by the app's own CLI):
 
 ```console
 "%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add dsh-model-show
 ```
 
-From GitHub, or from a local checkout:
+From GitHub or a local directory, replace the package name with `github:<user>/dsh-model-show` or
+`"C:\path\to\dsh-model-show"`. **Update** with an explicit version
+(`add dsh-model-show@1.0.4` — the registry `latest` can lag behind rc builds); **remove** with
+`plugin --profile desktop remove dsh-model-show`.
 
-```console
-"%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add github:<user>/dsh-model-show
-"%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "C:\path\to\dsh-model-show"
-```
+**Let the agent do it** — `plugin_manager`, `action: install_bundle`, `target` = package directory.
 
-Remove it with `plugin --profile desktop remove dsh-model-show`.
+## In effect / off again
 
-### From a DSH session
+| Action | Effect |
+|---|---|
+| Install, enable or disable from the plugin UI or market | DSH recomposes the tree in place; with HMR present (the Desktop build ships it) it applies **without a restart** |
+| `dsh plugin … add` from a shell, or hand-editing the profile | Disk-level change — restart once |
+| Disable the plugin | The slot entry is disposed and the **built-in seat takes over**: the trigger returns to the plain model name, no leftovers |
 
-Ask the agent to install the bundle from this directory (`plugin_manager` with
-`action: install_bundle` and the package directory as `target`).
+If DSH ever answers “restart required” after a UI action, it is one of four documented reasons
+(package moved, host module touched, unmanaged plugin, module comparison) — none apply here.
 
-Reload the page after installing. Replacing an already-loaded plugin with a different build needs
-an application restart.
+## What it does
 
-## Verify
+- **Trigger** — `Example Chat` → `Example Provider/Example Chat` (plus `· High` when the model has a
+  thinking effort).
+- **Badge** — the built-in decorator matches the model name literally, so the untouched catalog name
+  is kept beside the prefixed one and the decorator is replayed with it. The prefix shows once and
+  the badge keeps tracking DSH; it is never hard-coded.
+- **Menu, search, ARIA** — rows keep the plain name, search matches plain names only, and the ARIA
+  label mirrors the visible `Provider/Model` text.
 
-1. The composer trigger reads `Provider/Model` (plus `· <effort>` when the model reports a
-   reasoning effort).
-2. Hovering it shows the same text.
-3. The menu still lists plain model names under provider headings, and searching a provider name
-   does not match models.
+## Why it cannot freeze the composer
 
-## How it works
+`conversation.input.model` is a `single` slot: exactly one entry renders, and this plugin registers
+at `priority: -1` so it shadows the built-in seat. DSH only injects a `renderSlot` face into entries
+that declare children, and the child label slot may be declared only once (by the built-in seat) —
+so the plugin composes that child slot itself:
 
-- `lib/index.js` is the plugin's (empty) node half, so the bundle can be mounted by the profile's
-  layer stack; the browser half is discovered through `dsh.client` + `exports["./client"]`.
-- `cordis.patch.yml` inserts one row (`id: model-show`, `name: dsh-model-show`).
-- `lib/client.js` is the built-in `@deepseek-ai/dsh-client-ui-model-selection` browser bundle with
-  six documented edits (`scripts/vendor-from-asar.mjs`, each marked with an `EDIT:` comment in
-  the generated file). The two that produce the visible change are the provider-prefixed
-  `choices[].model.name` and registering the composer seat at `priority: -1`, which shadows the
-  built-in seat because the lowest priority renders. The upstream `inject` list is left untouched
-  (see Limitations — the seat resolves its catalog through the consuming context).
-- The label is prefixed where the trigger reads it (`currentChoice?.model.name`), so the menu's own
-  `groups` — and therefore search — stay untouched.
+- every registration is **mounted** with `createElement`, so a hook component keeps its own hooks;
+- every mount sits behind an **error boundary** — a render-phase throw from a third-party decorator
+  blanks that box only (the failure mode that used to freeze the menu with an empty log);
+- every mount sits in a **bounded box** (`min-width: 0`, `max-width: 100%`, `overflow: hidden`,
+  ellipsis), so a self-contained pill cannot blow up the trigger;
+- the **label body is DSH's own decorator** (locale prefix `deepseek-model-label`); anything else is
+  appended beside it instead of dropped.
+
+Side effect: those extra decorations also appear in the dropdown rows — the platform renders that
+slot per row too.
+
+## FAQ
+
+**Menu rows don't show the provider — a bug?** No. Only the trigger is rewritten, so grouping and
+search stay predictable.
+
+**Badge gone?** Enable the built-in `…deepseek-model-label-1017` plugin; the badge is a replayed
+decorator, not a string this plugin prints.
+
+**Market card says host requirement unknown?** The curated catalog fills its `npm` field from the
+registry on its own schedule; once it has, the card shows the version and `engines.dsh` and installs
+from the registry.
+
+**Installed but nothing changed?** Check the built-in model selection plugin is enabled and that the
+profile's `dsh.profile.bundles` still lists `dsh-model-show` (a broken declaration can be dropped
+during a host upgrade) — re-add the row and restart.
+
+## Privacy
+
+No network requests, no telemetry. It reads only what DSH exposes (the session's model catalog, the
+locale dictionaries, the slot registry) and never writes your catalog, credentials or settings. The
+published package is 12 files: code, locales, icon, screenshot, patch, licence/notice, readmes.
 
 ## Development
 
 ```console
-npm test                 # offline checks: manifest, the six edits, and the label behaviour
-npm run vendor           # re-extract the upstream bundle from the installed app and re-apply the edits
-npm run vendor:check     # exit non-zero when the shipped bundle is not the vendored one
+npm test              # manifest, vendoring edits, label composition, package whitelist
+npm run vendor        # re-extract the built-in bundle and re-apply the edits
+npm run vendor:check  # non-zero exit when the shipped bundle drifts
 ```
 
-`npm run vendor` reads
-`%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\app.asar` →
-`dsh/node_modules/@deepseek-ai/dsh-client-ui-model-selection/lib/client.js`, or a client bundle
-passed with `--from <client.js>` / an archive with `--asar <app.asar>`.
-
-If upstream moves an anchor, vendoring fails loudly (`anchor not found (<label>) — upstream
-bundle changed?`) instead of shipping a broken bundle; review the edits against the new bundle and
-update the script, then re-run `npm test`.
-
-Line endings are normalised to LF by `.gitattributes`. `lib/client.js` is compared byte for byte
-against the vendored output, so a CRLF checkout would fail both `npm test` and `npm run vendor:check`.
+`npm run vendor` reads `…\resources\app\dsh\node_modules\@deepseek-ai\dsh-client-ui-model-selection\lib\client.js`
+from the installed app (newer builds ship unpacked, so `--from <client.js>` and `--asar <app.asar>`
+are both accepted). If upstream moves an anchor it fails loudly instead of emitting a broken bundle.
+`lib/client.js` is compared byte-for-byte and normalised to LF, so a CRLF checkout breaks both
+`npm test` and `vendor:check`.
 
 | Path | Purpose |
 |---|---|
-| `package.json` | Bundle and client manifest (`dsh.bundle.patch`, `dsh.client`) |
-| `cordis.patch.yml` | Inserts the plugin row into the profile layer stack |
-| `lib/index.js` | Node half (empty `apply`, so the row can mount) |
-| `lib/client.js` | Vendored browser bundle with the six edits |
-| `scripts/vendor-from-asar.mjs` | Vendoring: extract from an installed DSH, apply and verify the edits |
-| `tests/verify-bundle.test.mjs` | Offline verification of the shipped bundle |
-| `icon.svg`, `locale/*.json` | Plugin Manager card metadata |
-| `screenshots.json`, `docs/composer-trigger.png` | Storefront screenshot, declared in-repo so the market reads it from here |
+| `lib/client.js` | vendored browser bundle (11 documented edits) |
+| `lib/index.js`, `cordis.patch.yml` | host half (empty `apply`) and the row that mounts it |
+| `scripts/vendor-from-asar.mjs` | extract, edit, verify |
+| `tests/*.test.mjs` | bundle assertions, label composition, publish whitelist |
 
-## Limitations
+## Known limitations
 
-- `lib/client.js` is a vendored copy of a built-in bundle, so it also requires
-  `@deepseek-ai/dsh-client-ui-primitives`, `@deepseek-ai/cordis`, and
-  `@deepseek-ai/dsh-client-store` from the browser module table (declared in
-  `dsh.client.external`). A redesign of the built-in model selector in a future DSH release can
-  break this bundle; `engines.dsh`, the vendoring script, and `npm test` are the guard rails.
-- The plugin inherits the built-in control wholesale, including its stylesheet and its
-  `min(360px, 45cqw)` trigger width; a long `Provider/Model` label is ellipsized rather than
-  wrapped.
-- The vendored bundle deliberately keeps the built-in plugin's whole service list (`commandUi`,
-  `locale`, `sessions`, `slots`, `remote`, `remote.session`). The seat resolves its per-session
-  catalog through the *consuming* context, so trimming the list to the services this plugin visibly
-  uses throws `cannot get property "remote.session" without inject` on the first render after a
-  launch; the slot registry then retires the crashing entry and the built-in seat renders instead —
-  with no error shown anywhere. `npm run vendor` and `npm test` guard against that edit returning.
-- No configuration: the format is fixed to `Provider/Model`.
+- `lib/client.js` is a vendored copy of the built-in bundle, so it still relies on the browser module
+  table's `dsh-client-ui-primitives`, `cordis` and `dsh-client-store` (declared in
+  `dsh.client.external`). A future refactor of the built-in selector can invalidate it; `engines.dsh`,
+  the vendoring script and the test suite are the three guards.
+- The control reuses the built-in implementation, including its `min(360px, 45cqw)` trigger width: a
+  long `Provider/Model` is ellipsised, never wrapped.
+- The vendored bundle keeps the built-in plugin's full service list on purpose — the seat resolves
+  its catalog through the consuming context, and trimming the list makes the first render after
+  launch throw and the seat silently retire.
+- No settings: the format is fixed as `Provider/Model`.
+- Third-party decorations also render in the dropdown rows, which can look noisy in a long list.
 
 ## License
 
-MIT. `lib/client.js` is derived from `@deepseek-ai/dsh-client-ui-model-selection` (MIT,
-Copyright (c) DeepSeek). See [NOTICE.md](NOTICE.md).
+MIT. `lib/client.js` derives from `@deepseek-ai/dsh-client-ui-model-selection` (MIT, Copyright (c)
+DeepSeek); see [NOTICE.md](NOTICE.md).

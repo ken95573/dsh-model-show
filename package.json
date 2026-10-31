@@ -1,6 +1,6 @@
 {
   "name": "dsh-model-show",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Composer model selector shows Provider/Model — 对话框模型选择器显示「供应商/模型」",
   "type": "module",
   "main": "lib/index.js",
@@ -69,6 +69,6 @@
     }
   },
   "engines": {
-    "dsh": ">=0.2.0-rc.1 <0.3.0-0 || >=0.2.1-rc.1 <0.4.0-0"
+    "dsh": ">=0.2.1-rc.2 <0.2.2"
   }
 }
