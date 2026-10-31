@@ -57,7 +57,7 @@ thinking-effort suffix DSH already appends.*
 
 From GitHub or a local directory, replace the package name with `github:<user>/dsh-model-show` or
 `"C:\path\to\dsh-model-show"`. **Update** with an explicit version
-(`add dsh-model-show@1.0.5` — the registry `latest` can lag behind rc builds); **remove** with
+(`add dsh-model-show@<version>` — see [releases](https://github.com/ken95573/dsh-model-show/releases); the registry `latest` can lag behind rc builds); **remove** with
 `plugin --profile desktop remove dsh-model-show`.
 
 **Let the agent do it** — `plugin_manager`, `action: install_bundle`, `target` = package directory.

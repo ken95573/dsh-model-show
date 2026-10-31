@@ -46,7 +46,7 @@ DSH Web 的对话框模型选择器显示为 **供应商/模型**，而不是一
 "%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add dsh-model-show
 ```
 
-从 GitHub 或本地目录安装，把包名换成 `github:<用户名>/dsh-model-show` 或 `"C:\path\to\dsh-model-show"`。**更新**请写显式版本（`add dsh-model-show@1.0.5`，仓库的 `latest` 可能落后于 rc 版本）；**卸载**用 `plugin --profile desktop remove dsh-model-show`。
+从 GitHub 或本地目录安装，把包名换成 `github:<用户名>/dsh-model-show` 或 `"C:\path\to\dsh-model-show"`。**更新**请写显式版本（`add dsh-model-show@<目标版本>`，版本号见 [Releases](https://github.com/ken95573/dsh-model-show/releases)；仓库的 `latest` 可能落后于 rc 版本）；**卸载**用 `plugin --profile desktop remove dsh-model-show`。
 
 **让 agent 装** — `plugin_manager`，`action: install_bundle`，`target` 传包目录。
 
